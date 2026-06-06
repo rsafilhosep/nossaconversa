@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Nossa Conversa 💌</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --rosa:    #f4c0d1;
+      --rosa-mid:#D4537E;
+      --rosa-bg: #FBEAF0;
+      --verde:   #d1ffd6;
+      --verde-mid:#1D9E75;
+      --bg:      #fff5f8;
+      --surface: #ffffff;
+      --text:    #2C2C2A;
+      --muted:   #888780;
+      --border:  #F4C0D1;
+      --radius:  18px;
+      --shadow:  0 4px 24px #d4537e18;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 20% 20%, #fbeaf088 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, #e1f5ee88 0%, transparent 50%);
+    }
+
+    /* ─── TELA DE LOGIN ─── */
+    #login-screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 20% 20%, #fbeaf0bb 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, #e1f5eeaa 0%, transparent 50%);
+      z-index: 100;
+      gap: 0;
+      animation: fadein .4s ease;
+    }
+    #login-screen .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem 2rem 2rem;
+      width: 90%; max-width: 340px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 1.2rem;
+      text-align: center;
+    }
+    #login-screen .heart {
+      font-size: 2.4rem;
+      line-height: 1;
+      margin-bottom: .2rem;
+    }
+    #login-screen h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    #login-screen p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .avatar-row {
+      display: flex; gap: 1rem; justify-content: center;
+    }
+    .avatar-btn {
+      flex: 1;
+      padding: 1rem .5rem;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      background: var(--rosa-bg);
+      cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: .5rem;
+      transition: all .2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .avatar-btn:hover { border-color: var(--rosa-mid); background: #f9d8e8; transform: translateY(-2px); }
+    .avatar-btn:active { transform: scale(.97); }
+    .avatar-btn .circle {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; font-weight: 500;
+      color: #fff;
+    }
+    .avatar-btn span { font-size: 14px; font-weight: 500; color: var(--text); }
+
+    /* ─── CHAT ─── */
+    #chat-screen {
+      display: none;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      display: flex; align-items: center; gap: .75rem;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 500; color: #fff;
+      flex-shrink: 0;
+    }
+    .header-info { flex: 1; }
+    .header-info strong {
+      display: block;
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+    .header-info small {
+      font-size: 11px; color: var(--verde-mid); font-weight: 500;
+    }
+    .header-nome {
+      font-size: 12px; color: var(--muted);
+    }
+    .btn-sair {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 18px; padding: 6px;
+      border-radius: 8px; transition: color .2s;
+    }
+    .btn-sair:hover { color: var(--rosa-mid); }
+
+    /* mensagens */
+    #mensagens {
+      flex: 1;
+      padding: 1rem 1rem 0.5rem;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 4px;
+      scroll-behavior: smooth;
+    }
+
+    .separador-data {
+      text-align: center;
+      font-size: 11px; color: var(--muted);
+      margin: 12px 0 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .separador-data::before, .separador-data::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .msg-wrapper {
+      display: flex;
+      flex-direction: column;
+      max-width: 78%;
+      animation: slidein .22s ease;
+    }
+    .msg-wrapper.deles { align-self: flex-start; }
+    .msg-wrapper.minha { align-self: flex-end; align-items: flex-end; }
+
+    .nome-msg {
+      font-size: 11px; font-weight: 500;
+      margin-bottom: 2px; padding: 0 4px;
+    }
+    .msg-wrapper.deles .nome-msg { color: var(--rosa-mid); }
+    .msg-wrapper.minha .nome-msg { color: var(--verde-mid); }
+
+    .msg {
+      padding: .6rem .9rem;
+      border-radius: 18px;
+      font-size: 14.5px;
+      line-height: 1.5;
+      word-break: break-word;
+      position: relative;
+    }
+    .msg-wrapper.deles .msg {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+      color: var(--text);
+    }
+    .msg-wrapper.minha .msg {
+      background: linear-gradient(135deg, #d1ffd6, #b8f5c2);
+      border-bottom-right-radius: 4px;
+      color: #1a4a25;
+    }
+
+    .hora-msg {
+      font-size: 10px; color: var(--muted);
+      margin-top: 2px; padding: 0 4px;
+    }
+
+    /* digitando */
+    #digitando {
+      padding: 4px 1rem 0;
+      font-size: 12px; color: var(--muted);
+      min-height: 20px;
+      font-style: italic;
+    }
+    .dot-anim { display: inline-flex; gap: 2px; align-items: center; }
+    .dot-anim span {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--muted); display: inline-block;
+      animation: bounce 1.2s infinite;
+    }
+    .dot-anim span:nth-child(2) { animation-delay: .2s; }
+    .dot-anim span:nth-child(3) { animation-delay: .4s; }
+
+    /* entrada */
+    .entrada {
+      display: flex; align-items: center; gap: 8px;
+      padding: .75rem 1rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    .entrada input {
+      flex: 1;
+      padding: .65rem 1rem;
+      border-radius: 24px;
+      border: 1.5px solid var(--border);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--rosa-bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .entrada input:focus { border-color: var(--rosa-mid); }
+    .entrada input::placeholder { color: #c9a0b0; }
+
+    .btn-emoji {
+      background: none; border: none; font-size: 22px;
+      cursor: pointer; padding: 4px; border-radius: 50%;
+      transition: transform .15s;
+      line-height: 1;
+    }
+    .btn-emoji:hover { transform: scale(1.2); }
+
+    .btn-enviar {
+      width: 42px; height: 42px;
+      border-radius: 50%; border: none;
+      background: linear-gradient(135deg, var(--rosa-mid), #b03c67);
+      color: #fff; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 2px 8px #d4537e44;
+    }
+    .btn-enviar:hover { transform: scale(1.05); box-shadow: 0 4px 14px #d4537e66; }
+    .btn-enviar:active { transform: scale(.95); }
+    .btn-enviar svg { width: 18px; height: 18px; }
+
+    /* emoji picker */
+    .emoji-picker {
+      position: absolute; bottom: 70px; left: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: .75rem;
+      display: none; flex-wrap: wrap; gap: 4px;
+      width: 260px;
+      box-shadow: var(--shadow);
+      z-index: 20;
+    }
+    .emoji-picker.open { display: flex; }
+    .emoji-picker button {
+      background: none; border: none; font-size: 20px;
+      cursor: pointer; padding: 4px; border-radius: 8px;
+      transition: background .15s;
+    }
+    .emoji-picker button:hover { background: var(--rosa-bg); }
+
+    /* animations */
+    @keyframes fadein { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+    @keyframes slidein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+
+    /* scrollbar */
+    #mensagens::-webkit-scrollbar { width: 4px; }
+    #mensagens::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="login-screen">
+  <div class="card">
+    <div class="heart">💌</div>
+    <h1>Nossa Conversa</h1>
+    <p>Quem está entrando?</p>
+    <div class="avatar-row" id="avatar-row">
+      <!-- preenchido pelo JS -->
+    </div>
+  </div>
+</div>
+
+<!-- TELA DE CHAT -->
+<div id="chat-screen">
+  <header>
+    <div class="header-avatar" id="header-avatar"></div>
+    <div class="header-info">
+      <strong>Nossa Conversa 💌</strong>
+      <small id="status-online">● online</small>
+    </div>
+    <span class="header-nome" id="header-nome"></span>
+    <button class="btn-sair" onclick="sair()" title="Sair">✕</button>
+  </header>
+
+  <div id="mensagens"></div>
+  <div id="digitando"></div>
+
+  <div style="position:relative">
+    <div class="emoji-picker" id="emoji-picker"></div>
+    <div class="entrada">
+      <button class="btn-emoji" onclick="toggleEmoji()" id="btn-emoji">😊</button>
+      <input id="texto" placeholder="Escreva algo fofo…" autocomplete="off" />
+      <button class="btn-enviar" onclick="enviar()" aria-label="Enviar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getDatabase, ref, push, onChildAdded, set, onValue, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  // ════════════════════════════════════════════
+  //   🔧 COLE AQUI O SEU firebaseConfig
+  // ════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyA9a3PfFh6unUU2FlRaTksuux-WugKa5K0",
+    authDomain: "chat-nosso-10a15.firebaseapp.com",
+    databaseURL: "https://chat-nosso-10a15-default-rtdb.firebaseio.com",
+    projectId: "chat-nosso-10a15",
+    storageBucket: "chat-nosso-10a15.firebasestorage.app",
+    messagingSenderId: "890918991008",
+    appId: "1:890918991008:web:5e0a5d0f07a6b1bbc985c5"
+  };
+
+  // ════════════════════════════════════════════
+  //   🎨 PERSONALIZE OS DOIS NOMES E CORES
+  // ════════════════════════════════════════════
+  const PESSOAS = [
+    { nome: "Rei",    cor: "#D4537E", iniciais: "R" },
+    { nome: "Amada", cor: "#1D9E75", iniciais: "A" }
+  ];
+  // ════════════════════════════════════════════
+
+  const EMOJIS = ["❤️","😍","🥰","😘","💕","💖","💗","🌹","🌸","✨","😊","🤗","😂","🙈","🎉","💌","🌙","⭐","🌈","🍓","☕","🍷","🤍","🫶","💋","😴","🥹","👀","💐","🦋"];
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const params = new URLSearchParams(window.location.search);
+  const sala = params.get("sala") || "principal";
+
+  let pessoa = null;
+  let pessoaObj = null;
+  let ultimaData = null;
+  let digitandoTimeout = null;
+
+  // ── EMOJIS ──
+  const picker = document.getElementById("emoji-picker");
+  EMOJIS.forEach(e => {
+    const btn = document.createElement("button");
+    btn.textContent = e;
+    btn.onclick = () => { inserirEmoji(e); };
+    picker.appendChild(btn);
+  });
+
+  window.toggleEmoji = () => picker.classList.toggle("open");
+  window.inserirEmoji = (e) => {
+    const inp = document.getElementById("texto");
+    inp.value += e; inp.focus();
+  };
+  document.addEventListener("click", ev => {
+    if (!picker.contains(ev.target) && ev.target.id !== "btn-emoji")
+      picker.classList.remove("open");
+  });
+
+  // ── LOGIN ──
+  const avatarRow = document.getElementById("avatar-row");
+  PESSOAS.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "avatar-btn";
+    btn.innerHTML = `
+      <div class="circle" style="background:${p.cor}">${p.iniciais}</div>
+      <span>${p.nome}</span>
+    `;
+    btn.onclick = () => entrar(p);
+    avatarRow.appendChild(btn);
+  });
+
+  function entrar(p) {
+    pessoa = p.nome;
+    pessoaObj = p;
+    localStorage.setItem("pessoaChat", p.nome);
+    document.getElementById("login-screen").style.display = "none";
+    const cs = document.getElementById("chat-screen");
+    cs.style.display = "flex";
+
+    // header
+    const av = document.getElementById("header-avatar");
+    av.style.background = p.cor;
+    av.textContent = p.iniciais;
+    document.getElementById("header-nome").textContent = p.nome;
+
+    iniciarChat();
+  }
+
+  // auto-login
+  const saved = localStorage.getItem("pessoaChat");
+  if (saved) {
+    const found = PESSOAS.find(p => p.nome === saved);
+    if (found) entrar(found);
+  }
+
+  window.sair = () => {
+    localStorage.removeItem("pessoaChat");
+    location.reload();
+  };
+
+  // ── CHAT ──
+  function iniciarChat() {
+    const msgRef = ref(db, `salas/${sala}/mensagens`);
+    const digRef = ref(db, `salas/${sala}/digitando/${pessoa}`);
+
+    // mensagens
+    onChildAdded(msgRef, snap => {
+      const msg = snap.val();
+      renderMsg(msg);
+    });
+
+    // digitando (outros)
+    const outroRef = ref(db, `salas/${sala}/digitando`);
+    onValue(outroRef, snap => {
+      const dados = snap.val() || {};
+      const outros = Object.entries(dados)
+        .filter(([k, v]) => k !== pessoa && v === true)
+        .map(([k]) => k);
+      const div = document.getElementById("digitando");
+      if (outros.length) {
+        div.innerHTML = `${outros.join(", ")} está digitando <span class="dot-anim"><span></span><span></span><span></span></span>`;
+      } else {
+        div.innerHTML = "";
+      }
+    });
+
+    // input digitando
+    const input = document.getElementById("texto");
+    input.addEventListener("input", () => {
+      set(digRef, true);
+      clearTimeout(digitandoTimeout);
+      digitandoTimeout = setTimeout(() => set(digRef, false), 2000);
+    });
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
+    });
+  }
+
+  function renderMsg(msg) {
+    const cont = document.getElementById("mensagens");
+
+    // separador de data
+    const dataLabel = formatarData(msg.data);
+    if (dataLabel !== ultimaData) {
+      ultimaData = dataLabel;
+      const sep = document.createElement("div");
+      sep.className = "separador-data";
+      sep.textContent = dataLabel;
+      cont.appendChild(sep);
+    }
+
+    const minha = msg.pessoa === pessoa;
+    const p = PESSOAS.find(x => x.nome === msg.pessoa) || { cor: "#888", iniciais: "?" };
+
+    const wrapper = document.createElement("div");
+    wrapper.className = `msg-wrapper ${minha ? "minha" : "deles"}`;
+
+    const nomeDiv = document.createElement("div");
+    nomeDiv.className = "nome-msg";
+    nomeDiv.textContent = msg.pessoa;
+
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "msg";
+    msgDiv.textContent = msg.texto;
+
+    const horaDiv = document.createElement("div");
+    horaDiv.className = "hora-msg";
+    horaDiv.textContent = msg.data ? new Date(msg.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+
+    wrapper.appendChild(nomeDiv);
+    wrapper.appendChild(msgDiv);
+    wrapper.appendChild(horaDiv);
+    cont.appendChild(wrapper);
+    cont.scrollTop = cont.scrollHeight;
+  }
+
+  function formatarData(ts) {
+    if (!ts) return "Agora";
+    const d = new Date(ts);
+    const hoje = new Date();
+    const ontem = new Date(); ontem.setDate(ontem.getDate() - 1);
+    if (d.toDateString() === hoje.toDateString()) return "Hoje";
+    if (d.toDateString() === ontem.toDateString()) return "Ontem";
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
+  }
+
+  window.enviar = function () {
+    if (!pessoa) return;
+    const input = document.getElementById("texto");
+    const texto = input.value.trim();
+    if (!texto) return;
+    const msgRef = ref(db, `salas/${sala}/mensagens`);
+    const digRef = ref(db, `salas/${sala}/digitando/${pessoa}`);
+    push(msgRef, { pessoa, texto, data: serverTimestamp() });
+    set(digRef, false);
+    input.value = "";
+    document.getElementById("emoji-picker").classList.remove("open");
+  };
+</script>
+</body>
+</html>
