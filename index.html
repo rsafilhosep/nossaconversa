@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Nossa Conversa 💌</title>
+  <link href="./css/fonts.css" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --rosa:#f4c0d1; --rosa-mid:#D4537E; --rosa-bg:#FBEAF0;
+      --verde:#d1ffd6; --verde-mid:#1D9E75;
+      --azul-mid:#378ADD; --azul-bg:#E6F1FB;
+      --bg:#fff5f8; --surface:#ffffff;
+      --text:#2C2C2A; --muted:#888780; --border:#F4C0D1;
+      --shadow:0 4px 24px #d4537e18;
+    }
+    html,body { height:100%; font-family:'DM Sans',sans-serif; background:var(--bg);
+      background-image:radial-gradient(circle at 20% 20%,#fbeaf088 0%,transparent 50%),
+        radial-gradient(circle at 80% 80%,#e1f5ee88 0%,transparent 50%); }
+
+    /* LOGIN */
+    #login-screen {
+      position:fixed; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      background:var(--bg);
+      background-image:radial-gradient(circle at 20% 20%,#fbeaf0bb 0%,transparent 50%),
+        radial-gradient(circle at 80% 80%,#e1f5eeaa 0%,transparent 50%);
+      z-index:100; animation:fadein .4s ease;
+    }
+    #login-screen .card {
+      background:var(--surface); border:1px solid var(--border); border-radius:24px;
+      padding:2.5rem 2rem 2rem; width:90%; max-width:360px;
+      box-shadow:var(--shadow); display:flex; flex-direction:column; gap:1.2rem; text-align:center;
+    }
+    #login-screen .heart { font-size:2.4rem; line-height:1; margin-bottom:.2rem; }
+    #login-screen h1 { font-family:'DM Serif Display',serif; font-size:1.6rem; color:var(--text); line-height:1.2; }
+    #login-screen p { font-size:13px; color:var(--muted); }
+    .avatar-row { display:flex; gap:.75rem; justify-content:center; flex-wrap:wrap; }
+    .avatar-btn {
+      flex:1; min-width:80px; padding:1rem .5rem;
+      border:1.5px solid var(--border); border-radius:16px; background:var(--rosa-bg);
+      cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:.5rem;
+      transition:all .2s; font-family:'DM Sans',sans-serif;
+    }
+    .avatar-btn:hover { border-color:var(--rosa-mid); background:#f9d8e8; transform:translateY(-2px); }
+    .avatar-btn:active { transform:scale(.97); }
+    .avatar-btn .circle {
+      width:52px; height:52px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.4rem; font-weight:500; color:#fff;
+    }
+    .avatar-btn span { font-size:13px; font-weight:500; color:var(--text); }
+    .avatar-btn .badge-admin {
+      font-size:10px; background:#378ADD22; color:var(--azul-mid);
+      border-radius:6px; padding:1px 6px; font-weight:500;
+    }
+
+    /* TELA SENHA */
+    .senha-screen { display:none; flex-direction:column; align-items:center; gap:1rem; animation:fadein .25s ease; }
+    .senha-screen.ativo { display:flex; }
+    .senha-screen .volta {
+      background:none; border:none; color:var(--muted); font-size:13px;
+      cursor:pointer; align-self:flex-start; padding:0; font-family:'DM Sans',sans-serif;
+    }
+    .senha-screen .volta:hover { color:var(--rosa-mid); }
+    .senha-screen .avatar-grande {
+      width:64px; height:64px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.6rem; font-weight:500; color:#fff;
+    }
+    .senha-screen p { font-size:14px; color:var(--muted); }
+    .senha-screen input {
+      width:100%; padding:.65rem 1rem; border-radius:12px;
+      border:1.5px solid var(--border); font-size:16px; font-family:'DM Sans',sans-serif;
+      background:var(--rosa-bg); color:var(--text); outline:none;
+      text-align:center; letter-spacing:4px; transition:border-color .2s;
+    }
+    .senha-screen input:focus { border-color:var(--rosa-mid); }
+    .senha-screen .btn-ok {
+      width:100%; padding:.75rem; border-radius:12px; border:none;
+      background:linear-gradient(135deg,var(--rosa-mid),#b03c67);
+      color:#fff; font-size:15px; font-weight:500;
+      font-family:'DM Sans',sans-serif; cursor:pointer; transition:opacity .2s;
+    }
+    .senha-screen .btn-ok:hover { opacity:.9; }
+    .erro-senha { font-size:12px; color:#D85A30; min-height:16px; text-align:center; }
+
+    /* PAINEL ADMIN */
+    .admin-screen { display:none; flex-direction:column; gap:1rem; animation:fadein .25s ease; text-align:left; }
+    .admin-screen.ativo { display:flex; }
+    .admin-screen h2 { font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--text); text-align:center; }
+    .admin-tabs { display:flex; gap:.5rem; margin-bottom:.25rem; }
+    .admin-tab {
+      flex:1; padding:.5rem; border-radius:10px; border:1.5px solid var(--border);
+      background:none; font-size:13px; font-family:'DM Sans',sans-serif;
+      cursor:pointer; color:var(--muted); transition:all .2s;
+    }
+    .admin-tab.ativo { background:var(--rosa-bg); color:var(--rosa-mid); border-color:var(--rosa-mid); font-weight:500; }
+    .admin-painel { display:none; flex-direction:column; gap:.75rem; }
+    .admin-painel.ativo { display:flex; }
+    .admin-label { font-size:12px; color:var(--muted); margin-bottom:2px; }
+    .admin-input {
+      width:100%; padding:.6rem .9rem; border-radius:10px;
+      border:1.5px solid var(--border); font-size:14px; font-family:'DM Sans',sans-serif;
+      background:var(--rosa-bg); color:var(--text); outline:none; transition:border-color .2s;
+    }
+    .admin-input:focus { border-color:var(--rosa-mid); }
+    .admin-select {
+      width:100%; padding:.6rem .9rem; border-radius:10px;
+      border:1.5px solid var(--border); font-size:14px; font-family:'DM Sans',sans-serif;
+      background:var(--rosa-bg); color:var(--text); outline:none;
+    }
+    .admin-btn {
+      width:100%; padding:.65rem; border-radius:10px; border:none;
+      background:linear-gradient(135deg,var(--rosa-mid),#b03c67);
+      color:#fff; font-size:14px; font-weight:500;
+      font-family:'DM Sans',sans-serif; cursor:pointer; transition:opacity .2s;
+    }
+    .admin-btn:hover { opacity:.9; }
+    .admin-msg { font-size:12px; min-height:16px; text-align:center; }
+    .admin-msg.ok { color:var(--verde-mid); }
+    .admin-msg.erro { color:#D85A30; }
+    .usuarios-lista { display:flex; flex-direction:column; gap:.5rem; max-height:180px; overflow-y:auto; }
+    .usuario-item {
+      display:flex; align-items:center; gap:.75rem;
+      padding:.5rem .75rem; border-radius:10px;
+      background:var(--rosa-bg); border:1px solid var(--border);
+    }
+    .usuario-item .u-circle {
+      width:32px; height:32px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:.85rem; font-weight:500; color:#fff;
+    }
+    .usuario-item .u-info { flex:1; }
+    .usuario-item .u-nome { font-size:13px; font-weight:500; color:var(--text); }
+    .usuario-item .u-tipo { font-size:11px; color:var(--muted); }
+    .btn-remover {
+      background:none; border:none; color:#D85A30; cursor:pointer;
+      font-size:16px; padding:4px; border-radius:6px; transition:background .15s;
+    }
+    .btn-remover:hover { background:#fcebeb; }
+
+    /* CHAT */
+    #chat-screen { display:none; flex-direction:column; height:100dvh; max-width:480px; margin:0 auto; }
+    header {
+      background:var(--surface); border-bottom:1px solid var(--border);
+      padding:1rem 1.25rem; display:flex; align-items:center; gap:.75rem;
+      position:sticky; top:0; z-index:10;
+    }
+    .header-avatar {
+      width:40px; height:40px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1rem; font-weight:500; color:#fff; flex-shrink:0;
+    }
+    .header-info { flex:1; }
+    .header-info strong { display:block; font-family:'DM Serif Display',serif; font-size:1.05rem; color:var(--text); }
+    .header-info small { font-size:11px; color:var(--verde-mid); font-weight:500; }
+    .header-acoes { display:flex; align-items:center; gap:4px; }
+    .btn-header {
+      background:none; border:none; cursor:pointer; color:var(--muted);
+      font-size:18px; padding:6px; border-radius:8px; transition:color .2s;
+    }
+    .btn-header:hover { color:var(--rosa-mid); }
+
+    #mensagens {
+      flex:1; padding:1rem 1rem .5rem; overflow-y:auto;
+      display:flex; flex-direction:column; gap:4px; scroll-behavior:smooth;
+    }
+    .separador-data {
+      text-align:center; font-size:11px; color:var(--muted);
+      margin:12px 0 8px; display:flex; align-items:center; gap:8px;
+    }
+    .separador-data::before,.separador-data::after { content:''; flex:1; height:1px; background:var(--border); }
+    .msg-wrapper { display:flex; flex-direction:column; max-width:78%; animation:slidein .22s ease; }
+    .msg-wrapper.deles { align-self:flex-start; }
+    .msg-wrapper.minha { align-self:flex-end; align-items:flex-end; }
+    .nome-msg { font-size:11px; font-weight:500; margin-bottom:2px; padding:0 4px; }
+    .msg-wrapper.deles .nome-msg { color:var(--rosa-mid); }
+    .msg-wrapper.minha .nome-msg { color:var(--verde-mid); }
+    .msg {
+      padding:.6rem .9rem; border-radius:18px; font-size:14.5px;
+      line-height:1.5; word-break:break-word; position:relative;
+    }
+    .msg-wrapper.deles .msg {
+      background:var(--surface); border:1px solid var(--border);
+      border-bottom-left-radius:4px; color:var(--text);
+    }
+    .msg-wrapper.minha .msg {
+      background:linear-gradient(135deg,#d1ffd6,#b8f5c2);
+      border-bottom-right-radius:4px; color:#1a4a25;
+    }
+    /* arquivo anexo */
+    .msg-arquivo {
+      display:flex; align-items:center; gap:.6rem;
+      padding:.6rem .9rem; border-radius:14px; cursor:pointer;
+      text-decoration:none; max-width:260px;
+    }
+    .msg-wrapper.deles .msg-arquivo {
+      background:var(--surface); border:1px solid var(--border);
+      border-bottom-left-radius:4px; color:var(--text);
+    }
+    .msg-wrapper.minha .msg-arquivo {
+      background:linear-gradient(135deg,#d1ffd6,#b8f5c2);
+      border-bottom-right-radius:4px; color:#1a4a25;
+    }
+    .msg-arquivo .arq-icon { font-size:1.6rem; flex-shrink:0; }
+    .msg-arquivo .arq-info { display:flex; flex-direction:column; overflow:hidden; }
+    .msg-arquivo .arq-nome { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .msg-arquivo .arq-tam { font-size:11px; opacity:.7; }
+    /* imagem */
+    .msg-img { max-width:220px; border-radius:14px; cursor:pointer; display:block; }
+    .hora-msg { font-size:10px; color:var(--muted); margin-top:2px; padding:0 4px; }
+
+    #digitando { padding:4px 1rem 0; font-size:12px; color:var(--muted); min-height:20px; font-style:italic; }
+    .dot-anim { display:inline-flex; gap:2px; align-items:center; }
+    .dot-anim span {
+      width:5px; height:5px; border-radius:50%; background:var(--muted);
+      display:inline-block; animation:bounce 1.2s infinite;
+    }
+    .dot-anim span:nth-child(2) { animation-delay:.2s; }
+    .dot-anim span:nth-child(3) { animation-delay:.4s; }
+
+    .entrada {
+      display:flex; align-items:center; gap:8px;
+      padding:.75rem 1rem; background:var(--surface); border-top:1px solid var(--border);
+    }
+    .entrada input[type=text] {
+      flex:1; padding:.65rem 1rem; border-radius:24px;
+      border:1.5px solid var(--border); font-size:15px;
+      font-family:'DM Sans',sans-serif; background:var(--rosa-bg);
+      color:var(--text); outline:none; transition:border-color .2s;
+    }
+    .entrada input[type=text]:focus { border-color:var(--rosa-mid); }
+    .entrada input[type=text]::placeholder { color:#c9a0b0; }
+    .btn-emoji {
+      background:none; border:none; font-size:22px; cursor:pointer;
+      padding:4px; border-radius:50%; transition:transform .15s; line-height:1;
+    }
+    .btn-emoji:hover { transform:scale(1.2); }
+    .btn-anexo {
+      background:none; border:none; font-size:20px; cursor:pointer;
+      padding:4px 6px; border-radius:50%; transition:transform .15s; line-height:1; color:var(--muted);
+    }
+    .btn-anexo:hover { transform:scale(1.2); color:var(--rosa-mid); }
+    .btn-enviar {
+      width:42px; height:42px; border-radius:50%; border:none;
+      background:linear-gradient(135deg,var(--rosa-mid),#b03c67);
+      color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; transition:transform .15s,box-shadow .15s;
+      box-shadow:0 2px 8px #d4537e44;
+    }
+    .btn-enviar:hover { transform:scale(1.05); box-shadow:0 4px 14px #d4537e66; }
+    .btn-enviar:active { transform:scale(.95); }
+    .btn-enviar svg { width:18px; height:18px; }
+
+    /* barra upload */
+    .upload-bar {
+      display:none; align-items:center; gap:.75rem;
+      padding:.6rem 1rem; background:#f0faf5; border-top:1px solid #9FE1CB;
+      font-size:13px; color:var(--verde-mid);
+    }
+    .upload-bar.ativo { display:flex; }
+    .upload-bar .arq-preview { font-weight:500; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .upload-bar .btn-cancelar {
+      background:none; border:none; color:#D85A30; cursor:pointer;
+      font-size:18px; padding:2px; line-height:1;
+    }
+    .progress-bar { height:3px; background:var(--border); border-radius:2px; margin:0 1rem; display:none; }
+    .progress-bar .fill { height:100%; background:var(--verde-mid); border-radius:2px; transition:width .3s; width:0%; }
+
+    .emoji-picker {
+      position:absolute; bottom:70px; left:1rem;
+      background:var(--surface); border:1px solid var(--border); border-radius:16px;
+      padding:.75rem; display:none; flex-wrap:wrap; gap:4px;
+      width:260px; box-shadow:var(--shadow); z-index:20;
+    }
+    .emoji-picker.open { display:flex; }
+    .emoji-picker button {
+      background:none; border:none; font-size:20px; cursor:pointer;
+      padding:4px; border-radius:8px; transition:background .15s;
+    }
+    .emoji-picker button:hover { background:var(--rosa-bg); }
+
+    /* modal imagem */
+    .modal-img {
+      display:none; position:fixed; inset:0; background:#000a;
+      z-index:200; align-items:center; justify-content:center;
+    }
+    .modal-img.open { display:flex; }
+    .modal-img img { max-width:92vw; max-height:90vh; border-radius:12px; }
+    .modal-img .fechar {
+      position:absolute; top:16px; right:16px;
+      background:#fff3; border:none; color:#fff; font-size:24px;
+      cursor:pointer; border-radius:50%; width:36px; height:36px;
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    @keyframes fadein { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
+    @keyframes slidein { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+    #mensagens::-webkit-scrollbar { width:4px; }
+    #mensagens::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="card">
+    <div id="tela-escolha">
+      <div class="heart">💌</div>
+      <h1>Nossa Conversa</h1>
+      <p>Quem está entrando?</p>
+      <div class="avatar-row" id="avatar-row"><button class="avatar-btn">
+        <div class="circle" style="background:#D4537E">R</div>
+        <span>Reinaldo</span>
+        <span class="badge-admin">admin</span>
+      </button><button class="avatar-btn">
+        <div class="circle" style="background:#1D9E75">E</div>
+        <span>Edilaine</span>
+        
+      </button></div>
+    </div>
+    <div class="senha-screen" id="tela-senha">
+      <button class="volta" onclick="voltarEscolha()">← Voltar</button>
+      <div class="avatar-grande" id="senha-avatar"></div>
+      <p id="senha-label">Digite sua senha</p>
+      <input type="password" id="campo-senha" placeholder="••••••" maxlength="30">
+      <div class="erro-senha" id="erro-senha"></div>
+      <button class="btn-ok" onclick="confirmarSenha()">Entrar 💌</button>
+    </div>
+    <div class="admin-screen" id="tela-admin">
+      <button class="volta" onclick="voltarEscolha()">← Voltar</button>
+      <h2>⚙️ Painel Admin</h2>
+      <div class="admin-tabs">
+        <button class="admin-tab ativo" onclick="abaAdmin(&#39;usuarios&#39;)">Usuários</button>
+        <button class="admin-tab" onclick="abaAdmin(&#39;adicionar&#39;)">Adicionar</button>
+        <button class="admin-tab" onclick="abaAdmin(&#39;senha&#39;)">Alterar senha</button>
+      </div>
+
+      <!-- aba usuários -->
+      <div class="admin-painel ativo" id="aba-usuarios">
+        <div class="usuarios-lista" id="lista-usuarios"></div>
+      </div>
+
+      <!-- aba adicionar -->
+      <div class="admin-painel" id="aba-adicionar">
+        <div>
+          <div class="admin-label">Nome</div>
+          <input class="admin-input" id="novo-nome" placeholder="Ex: Filho" maxlength="20">
+        </div>
+        <div>
+          <div class="admin-label">Senha</div>
+          <input class="admin-input" id="nova-senha" type="password" placeholder="Senha do novo usuário" maxlength="30">
+        </div>
+        <div>
+          <div class="admin-label">Cor do avatar</div>
+          <input type="color" id="nova-cor" value="#378ADD" style="width:100%;height:40px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;padding:2px;">
+        </div>
+        <button class="admin-btn" onclick="adicionarUsuario()">Adicionar usuário</button>
+        <div class="admin-msg" id="msg-adicionar"></div>
+      </div>
+
+      <!-- aba alterar senha -->
+      <div class="admin-painel" id="aba-senha">
+        <div>
+          <div class="admin-label">Usuário</div>
+          <select class="admin-select" id="sel-usuario"></select>
+        </div>
+        <div>
+          <div class="admin-label">Nova senha</div>
+          <input class="admin-input" id="nova-senha-u" type="password" placeholder="Nova senha" maxlength="30">
+        </div>
+        <button class="admin-btn" onclick="alterarSenha()">Salvar senha</button>
+        <div class="admin-msg" id="msg-senha"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div id="chat-screen">
+  <header>
+    <div class="header-avatar" id="header-avatar"></div>
+    <div class="header-info">
+      <strong>Nossa Conversa 💌</strong>
+      <small id="status-online">● online</small>
+    </div>
+    <div class="header-acoes">
+      <span style="font-size:12px;color:var(--muted)" id="header-nome"></span>
+      <button class="btn-header" onclick="sair()" title="Sair">✕</button>
+    </div>
+  </header>
+
+  <div id="mensagens"></div>
+  <div id="digitando"></div>
+  <div class="upload-bar" id="upload-bar">
+    <span>📎</span>
+    <span class="arq-preview" id="arq-preview"></span>
+    <button class="btn-cancelar" onclick="cancelarAnexo()">✕</button>
+  </div>
+  <div class="progress-bar" id="progress-bar"><div class="fill" id="progress-fill"></div></div>
+
+  <div style="position:relative">
+    <div class="emoji-picker" id="emoji-picker"></div>
+    <div class="entrada">
+      <button class="btn-emoji" onclick="toggleEmoji()" id="btn-emoji">😊</button>
+      <button class="btn-anexo" onclick="document.getElementById(&#39;file-input&#39;).click()" title="Anexar arquivo">📎</button>
+      <input type="file" id="file-input" style="display:none" accept="image/*,application/pdf,.doc,.docx,.txt,.zip,.mp3,.mp4">
+      <input type="text" id="texto" placeholder="Escreva algo fofo…" autocomplete="off">
+      <button class="btn-enviar" onclick="enviar()" aria-label="Enviar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMAGEM -->
+<div class="modal-img" id="modal-img" onclick="fecharModal()">
+  <button class="fechar">✕</button>
+  <img id="modal-img-src" src="" alt="">
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getDatabase, ref, push, onChildAdded, set, onValue, serverTimestamp, remove
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import {
+    getStorage, ref as sref, uploadBytesResumable, getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+  // ══════════════════════════════════════════
+  //   🔧 firebaseConfig
+  // ══════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyA9a3PfFh6unUU2FlRaTksuux-WugKa5K0",
+    authDomain: "chat-nosso-10a15.firebaseapp.com",
+    databaseURL: "https://chat-nosso-10a15-default-rtdb.firebaseio.com",
+    projectId: "chat-nosso-10a15",
+    storageBucket: "chat-nosso-10a15.firebasestorage.app",
+    messagingSenderId: "890918991008",
+    appId: "1:890918991008:web:5e0a5d0f07a6b1bbc985c5"
+  };
+
+  // ══════════════════════════════════════════
+  //   👥 USUÁRIOS — edite aqui
+  //   admin:true = acessa painel admin
+  // ══════════════════════════════════════════
+  let PESSOAS = [
+    { nome: "Reinaldo", cor: "#D4537E", iniciais: "R", senha: "1982", admin: true },
+    { nome: "Edilaine", cor: "#1D9E75", iniciais: "E", senha: "1982", admin: false }
+  ];
+  // ══════════════════════════════════════════
+
+  const EMOJIS = ["❤️","😍","🥰","😘","💕","💖","💗","🌹","🌸","✨","😊","🤗","😂","🙈","🎉","💌","🌙","⭐","🌈","🍓","☕","🍷","🤍","🫶","💋","😴","🥹","👀","💐","🦋"];
+  const CORES_DISPONIVEIS = ["#D4537E","#1D9E75","#378ADD","#B03C67","#0F6E56","#533AB7","#E87A2B","#7B3FA0"];
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const storage = getStorage(app);
+  const params = new URLSearchParams(window.location.search);
+  const sala = params.get("sala") || "principal";
+
+  let pessoa = null, pessoaObj = null, ultimaData = null, digitandoTimeout = null;
+  let arquivoSelecionado = null;
+
+  // ── EMOJI PICKER ──
+  const picker = document.getElementById("emoji-picker");
+  EMOJIS.forEach(e => {
+    const btn = document.createElement("button");
+    btn.textContent = e;
+    btn.onclick = () => { document.getElementById("texto").value += e; document.getElementById("texto").focus(); };
+    picker.appendChild(btn);
+  });
+  window.toggleEmoji = () => picker.classList.toggle("open");
+  document.addEventListener("click", ev => {
+    if (!picker.contains(ev.target) && ev.target.id !== "btn-emoji") picker.classList.remove("open");
+  });
+
+  // ── ANEXO ──
+  document.getElementById("file-input").addEventListener("change", e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { alert("Arquivo muito grande! Máximo 10 MB."); return; }
+    arquivoSelecionado = f;
+    document.getElementById("arq-preview").textContent = f.name;
+    document.getElementById("upload-bar").classList.add("ativo");
+  });
+  window.cancelarAnexo = () => {
+    arquivoSelecionado = null;
+    document.getElementById("upload-bar").classList.remove("ativo");
+    document.getElementById("file-input").value = "";
+  };
+
+  // ── MODAL IMAGEM ──
+  window.fecharModal = () => document.getElementById("modal-img").classList.remove("open");
+  window.abrirImagem = (url) => {
+    document.getElementById("modal-img-src").src = url;
+    document.getElementById("modal-img").classList.add("open");
+  };
+
+  // ── RENDERIZAR AVATARES LOGIN ──
+  function renderizarAvatares() {
+    const avatarRow = document.getElementById("avatar-row");
+    avatarRow.innerHTML = "";
+    PESSOAS.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "avatar-btn";
+      btn.innerHTML = `
+        <div class="circle" style="background:${p.cor}">${p.iniciais}</div>
+        <span>${p.nome}</span>
+        ${p.admin ? '<span class="badge-admin">admin</span>' : ''}
+      `;
+      btn.onclick = () => pedirSenha(p);
+      avatarRow.appendChild(btn);
+    });
+  }
+  renderizarAvatares();
+
+  // ── FLUXO LOGIN ──
+  let pessoaSelecionada = null;
+
+  function pedirSenha(p) {
+    pessoaSelecionada = p;
+    document.getElementById("tela-escolha").style.display = "none";
+    const ts = document.getElementById("tela-senha");
+    ts.classList.add("ativo");
+    const av = document.getElementById("senha-avatar");
+    av.style.background = p.cor;
+    av.textContent = p.iniciais;
+    document.getElementById("senha-label").textContent = `Olá, ${p.nome}! Digite sua senha`;
+    document.getElementById("campo-senha").value = "";
+    document.getElementById("erro-senha").textContent = "";
+    setTimeout(() => document.getElementById("campo-senha").focus(), 100);
+  }
+
+  window.voltarEscolha = () => {
+    document.getElementById("tela-escolha").style.display = "";
+    document.getElementById("tela-senha").classList.remove("ativo");
+    document.getElementById("tela-admin").classList.remove("ativo");
+    pessoaSelecionada = null;
+  };
+
+  window.confirmarSenha = () => {
+    const digitada = document.getElementById("campo-senha").value;
+    if (digitada === pessoaSelecionada.senha) {
+      if (pessoaSelecionada.admin) {
+        abrirAdmin(pessoaSelecionada);
+      } else {
+        entrar(pessoaSelecionada);
+      }
+    } else {
+      document.getElementById("erro-senha").textContent = "Senha incorreta, tente novamente.";
+      document.getElementById("campo-senha").value = "";
+      document.getElementById("campo-senha").focus();
+    }
+  };
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter" && document.getElementById("tela-senha").classList.contains("ativo")) confirmarSenha();
+  });
+
+  // ── PAINEL ADMIN ──
+  function abrirAdmin(p) {
+    document.getElementById("tela-senha").classList.remove("ativo");
+    const ta = document.getElementById("tela-admin");
+    ta.classList.add("ativo");
+    renderizarListaAdmin();
+    preencherSelectSenha();
+  }
+
+  function renderizarListaAdmin() {
+    const lista = document.getElementById("lista-usuarios");
+    lista.innerHTML = "";
+    PESSOAS.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.className = "usuario-item";
+      div.innerHTML = `
+        <div class="u-circle" style="background:${p.cor}">${p.iniciais}</div>
+        <div class="u-info">
+          <div class="u-nome">${p.nome} ${p.admin ? '👑' : ''}</div>
+          <div class="u-tipo">${p.admin ? 'Administrador' : 'Usuário'}</div>
+        </div>
+        ${!p.admin ? `<button class="btn-remover" onclick="removerUsuario(${i})" title="Remover">✕</button>` : ''}
+      `;
+      lista.appendChild(div);
+    });
+  }
+
+  function preencherSelectSenha() {
+    const sel = document.getElementById("sel-usuario");
+    sel.innerHTML = "";
+    PESSOAS.forEach(p => {
+      const op = document.createElement("option");
+      op.value = p.nome;
+      op.textContent = p.nome + (p.admin ? ' 👑' : '');
+      sel.appendChild(op);
+    });
+  }
+
+  window.abaAdmin = (aba) => {
+    document.querySelectorAll(".admin-tab").forEach((t,i) => {
+      const abas = ["usuarios","adicionar","senha"];
+      t.classList.toggle("ativo", abas[i] === aba);
+    });
+    document.querySelectorAll(".admin-painel").forEach(p => p.classList.remove("ativo"));
+    document.getElementById("aba-" + aba).classList.add("ativo");
+  };
+
+  window.adicionarUsuario = () => {
+    const nome = document.getElementById("novo-nome").value.trim();
+    const senha = document.getElementById("nova-senha").value;
+    const cor = document.getElementById("nova-cor").value;
+    const msg = document.getElementById("msg-adicionar");
+    if (!nome) { msg.className = "admin-msg erro"; msg.textContent = "Digite um nome."; return; }
+    if (!senha) { msg.className = "admin-msg erro"; msg.textContent = "Digite uma senha."; return; }
+    if (PESSOAS.find(p => p.nome.toLowerCase() === nome.toLowerCase())) {
+      msg.className = "admin-msg erro"; msg.textContent = "Já existe um usuário com esse nome."; return;
+    }
+    const iniciais = nome.substring(0,2).toUpperCase();
+    PESSOAS.push({ nome, cor, iniciais, senha, admin: false });
+    renderizarAvatares();
+    renderizarListaAdmin();
+    preencherSelectSenha();
+    document.getElementById("novo-nome").value = "";
+    document.getElementById("nova-senha").value = "";
+    msg.className = "admin-msg ok";
+    msg.textContent = `✓ ${nome} adicionado com sucesso!`;
+    setTimeout(() => msg.textContent = "", 3000);
+  };
+
+  window.removerUsuario = (i) => {
+    if (!confirm(`Remover ${PESSOAS[i].nome}?`)) return;
+    PESSOAS.splice(i, 1);
+    renderizarAvatares();
+    renderizarListaAdmin();
+    preencherSelectSenha();
+  };
+
+  window.alterarSenha = () => {
+    const nomeU = document.getElementById("sel-usuario").value;
+    const novaSenha = document.getElementById("nova-senha-u").value;
+    const msg = document.getElementById("msg-senha");
+    if (!novaSenha) { msg.className = "admin-msg erro"; msg.textContent = "Digite a nova senha."; return; }
+    const p = PESSOAS.find(x => x.nome === nomeU);
+    if (p) {
+      p.senha = novaSenha;
+      document.getElementById("nova-senha-u").value = "";
+      msg.className = "admin-msg ok";
+      msg.textContent = `✓ Senha de ${nomeU} alterada!`;
+      setTimeout(() => msg.textContent = "", 3000);
+    }
+  };
+
+  // botão "Entrar no chat" no admin
+  const btnEntrarAdmin = document.createElement("button");
+  btnEntrarAdmin.className = "admin-btn";
+  btnEntrarAdmin.style.marginTop = ".25rem";
+  btnEntrarAdmin.style.background = "linear-gradient(135deg,#378ADD,#185FA5)";
+  btnEntrarAdmin.textContent = "Entrar no chat →";
+  btnEntrarAdmin.onclick = () => entrar(pessoaSelecionada || PESSOAS[0]);
+  document.getElementById("tela-admin").appendChild(btnEntrarAdmin);
+
+  // ── ENTRAR NO CHAT ──
+  function entrar(p) {
+    pessoa = p.nome;
+    pessoaObj = p;
+    localStorage.setItem("pessoaChat", p.nome);
+    document.getElementById("login-screen").style.display = "none";
+    const cs = document.getElementById("chat-screen");
+    cs.style.display = "flex";
+    const av = document.getElementById("header-avatar");
+    av.style.background = p.cor;
+    av.textContent = p.iniciais;
+    document.getElementById("header-nome").textContent = p.nome;
+    iniciarChat();
+  }
+
+  // auto-login
+  const saved = localStorage.getItem("pessoaChat");
+  if (saved) {
+    const found = PESSOAS.find(p => p.nome === saved);
+    if (found) entrar(found);
+  }
+
+  window.sair = () => { localStorage.removeItem("pessoaChat"); location.reload(); };
+
+  // ── CHAT ──
+  function iniciarChat() {
+    const msgRef = ref(db, `salas/${sala}/mensagens`);
+    const digRef = ref(db, `salas/${sala}/digitando/${pessoa}`);
+
+    onChildAdded(msgRef, snap => renderMsg(snap.val()));
+
+    onValue(ref(db, `salas/${sala}/digitando`), snap => {
+      const dados = snap.val() || {};
+      const outros = Object.entries(dados).filter(([k,v]) => k !== pessoa && v === true).map(([k]) => k);
+      const div = document.getElementById("digitando");
+      div.innerHTML = outros.length
+        ? `${outros.join(", ")} está digitando <span class="dot-anim"><span></span><span></span><span></span></span>`
+        : "";
+    });
+
+    const input = document.getElementById("texto");
+    input.addEventListener("input", () => {
+      set(digRef, true);
+      clearTimeout(digitandoTimeout);
+      digitandoTimeout = setTimeout(() => set(digRef, false), 2000);
+    });
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
+    });
+  }
+
+  function renderMsg(msg) {
+    const cont = document.getElementById("mensagens");
+    const dataLabel = formatarData(msg.data);
+    if (dataLabel !== ultimaData) {
+      ultimaData = dataLabel;
+      const sep = document.createElement("div");
+      sep.className = "separador-data";
+      sep.textContent = dataLabel;
+      cont.appendChild(sep);
+    }
+    const minha = msg.pessoa === pessoa;
+    const wrapper = document.createElement("div");
+    wrapper.className = `msg-wrapper ${minha ? "minha" : "deles"}`;
+
+    const nomeDiv = document.createElement("div");
+    nomeDiv.className = "nome-msg";
+    nomeDiv.textContent = msg.pessoa;
+
+    let conteudo;
+    if (msg.tipo === "imagem") {
+      conteudo = document.createElement("img");
+      conteudo.className = "msg-img";
+      conteudo.src = msg.url;
+      conteudo.alt = msg.nomeArquivo || "imagem";
+      conteudo.onclick = () => window.abrirImagem(msg.url);
+    } else if (msg.tipo === "arquivo") {
+      conteudo = document.createElement("a");
+      conteudo.className = "msg-arquivo";
+      conteudo.href = msg.url;
+      conteudo.target = "_blank";
+      conteudo.innerHTML = `
+        <span class="arq-icon">${iconeArquivo(msg.nomeArquivo)}</span>
+        <span class="arq-info">
+          <span class="arq-nome">${msg.nomeArquivo}</span>
+          <span class="arq-tam">${msg.tamanho || ""}</span>
+        </span>
+      `;
+    } else {
+      conteudo = document.createElement("div");
+      conteudo.className = "msg";
+      conteudo.textContent = msg.texto;
+    }
+
+    const horaDiv = document.createElement("div");
+    horaDiv.className = "hora-msg";
+    horaDiv.textContent = msg.data ? new Date(msg.data).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "";
+
+    wrapper.appendChild(nomeDiv);
+    wrapper.appendChild(conteudo);
+    wrapper.appendChild(horaDiv);
+    cont.appendChild(wrapper);
+    cont.scrollTop = cont.scrollHeight;
+  }
+
+  function iconeArquivo(nome) {
+    if (!nome) return "📄";
+    const ext = nome.split(".").pop().toLowerCase();
+    if (["pdf"].includes(ext)) return "📕";
+    if (["doc","docx"].includes(ext)) return "📝";
+    if (["zip","rar"].includes(ext)) return "🗜️";
+    if (["mp3","wav","ogg"].includes(ext)) return "🎵";
+    if (["mp4","mov","avi"].includes(ext)) return "🎬";
+    if (["txt"].includes(ext)) return "📄";
+    return "📎";
+  }
+
+  function formatarData(ts) {
+    if (!ts) return "Agora";
+    const d = new Date(ts);
+    const hoje = new Date();
+    const ontem = new Date(); ontem.setDate(ontem.getDate()-1);
+    if (d.toDateString() === hoje.toDateString()) return "Hoje";
+    if (d.toDateString() === ontem.toDateString()) return "Ontem";
+    return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"});
+  }
+
+  function formatarTamanho(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
+    return (bytes/(1024*1024)).toFixed(1) + " MB";
+  }
+
+  window.enviar = async function () {
+    if (!pessoa) return;
+    const msgRef = ref(db, `salas/${sala}/mensagens`);
+    const digRef = ref(db, `salas/${sala}/digitando/${pessoa}`);
+
+    // envio de arquivo
+    if (arquivoSelecionado) {
+      const f = arquivoSelecionado;
+      const ehImagem = f.type.startsWith("image/");
+      const caminho = `salas/${sala}/${Date.now()}_${f.name}`;
+      const storageRef = sref(storage, caminho);
+      const task = uploadBytesResumable(storageRef, f);
+
+      const pb = document.getElementById("progress-bar");
+      const pf = document.getElementById("progress-fill");
+      pb.style.display = "block";
+
+      task.on("state_changed",
+        snap => { pf.style.width = (snap.bytesTransferred/snap.totalBytes*100) + "%"; },
+        err => { alert("Erro no upload: " + err.message); pb.style.display = "none"; },
+        async () => {
+          const url = await getDownloadURL(task.snapshot.ref);
+          await push(msgRef, {
+            pessoa, url,
+            tipo: ehImagem ? "imagem" : "arquivo",
+            nomeArquivo: f.name,
+            tamanho: formatarTamanho(f.size),
+            data: serverTimestamp()
+          });
+          pb.style.display = "none";
+          pf.style.width = "0%";
+          cancelarAnexo();
+        }
+      );
+      return;
+    }
+
+    // envio de texto
+    const input = document.getElementById("texto");
+    const texto = input.value.trim();
+    if (!texto) return;
+    push(msgRef, { pessoa, texto, tipo: "texto", data: serverTimestamp() });
+    set(digRef, false);
+    input.value = "";
+    document.getElementById("emoji-picker").classList.remove("open");
+  };
+</script>
+
+
+</body></html>
