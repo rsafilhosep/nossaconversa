@@ -48,7 +48,12 @@
       width:52px; height:52px; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
       font-size:1.4rem; font-weight:500; color:#fff;
+      overflow:hidden; background-size:cover; background-position:center;
     }
+    .avatar-btn .circle.com-foto,
+    .senha-screen .avatar-grande.com-foto,
+    .usuario-item .u-circle.com-foto,
+    .header-avatar.com-foto { color:transparent; }
     .avatar-btn span { font-size:13px; font-weight:500; color:var(--text); }
     .avatar-btn .badge-admin {
       font-size:10px; background:#378ADD22; color:var(--azul-mid);
@@ -67,6 +72,7 @@
       width:64px; height:64px; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
       font-size:1.6rem; font-weight:500; color:#fff;
+      overflow:hidden; background-size:cover; background-position:center;
     }
     .senha-screen p { font-size:14px; color:var(--muted); }
     .senha-screen input {
@@ -130,6 +136,7 @@
       width:32px; height:32px; border-radius:50%; flex-shrink:0;
       display:flex; align-items:center; justify-content:center;
       font-size:.85rem; font-weight:500; color:#fff;
+      overflow:hidden; background-size:cover; background-position:center;
     }
     .usuario-item .u-info { flex:1; }
     .usuario-item .u-nome { font-size:13px; font-weight:500; color:var(--text); }
@@ -151,7 +158,9 @@
       width:40px; height:40px; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
       font-size:1rem; font-weight:500; color:#fff; flex-shrink:0;
+      overflow:hidden; background-size:cover; background-position:center; cursor:pointer;
     }
+    .header-avatar:hover { outline:2px solid var(--rosa-mid); outline-offset:2px; }
     .header-info { flex:1; }
     .header-info strong { display:block; font-family:'DM Serif Display',serif; font-size:1.05rem; color:var(--text); }
     .header-info small { font-size:11px; color:var(--verde-mid); font-weight:500; }
@@ -357,6 +366,10 @@
           <div class="admin-label">Cor do avatar</div>
           <input type="color" id="nova-cor" value="#378ADD" style="width:100%;height:40px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;padding:2px;">
         </div>
+        <div>
+          <div class="admin-label">Foto do usuario (opcional)</div>
+          <input class="admin-input" id="nova-foto" type="file" accept="image/*" style="padding:.45rem .7rem;">
+        </div>
         <button class="admin-btn" onclick="adicionarUsuario()">Adicionar usuário</button>
         <div class="admin-msg" id="msg-adicionar"></div>
       </div>
@@ -381,7 +394,7 @@
 <!-- CHAT -->
 <div id="chat-screen">
   <header>
-    <div class="header-avatar" id="header-avatar"></div>
+    <div class="header-avatar" id="header-avatar" onclick="escolherMinhaFoto()" title="Trocar minha foto"></div>
     <div class="header-info">
       <strong>Nossa Conversa 💌</strong>
       <small id="status-online">● online</small>
@@ -407,6 +420,7 @@
       <button class="btn-emoji" onclick="toggleEmoji()" id="btn-emoji">😊</button>
       <button class="btn-anexo" onclick="document.getElementById(&#39;file-input&#39;).click()" title="Anexar arquivo">📎</button>
       <input type="file" id="file-input" style="display:none" accept="image/*,application/pdf,.doc,.docx,.txt,.zip,.mp3,.mp4">
+      <input type="file" id="foto-usuario-input" style="display:none" accept="image/*">
       <input type="text" id="texto" placeholder="Escreva algo fofo…" autocomplete="off">
       <button class="btn-enviar" onclick="enviar()" aria-label="Enviar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -450,10 +464,11 @@
   //   👥 USUÁRIOS — edite aqui
   //   admin:true = acessa painel admin
   // ══════════════════════════════════════════
-  let PESSOAS = [
-    { nome: "Reinaldo", cor: "#D4537E", iniciais: "R", senha: "1982", admin: true },
-    { nome: "Edilaine", cor: "#1D9E75", iniciais: "E", senha: "1982", admin: false }
+  const PESSOAS_PADRAO = [
+    { id: "reinaldo", nome: "Reinaldo", cor: "#D4537E", iniciais: "R", senha: "1982", admin: true, foto: "" },
+    { id: "edilaine", nome: "Edilaine", cor: "#1D9E75", iniciais: "E", senha: "1982", admin: false, foto: "" }
   ];
+  let PESSOAS = [...PESSOAS_PADRAO];
   // ══════════════════════════════════════════
 
   const EMOJIS = ["❤️","😍","🥰","😘","💕","💖","💗","🌹","🌸","✨","😊","🤗","😂","🙈","🎉","💌","🌙","⭐","🌈","🍓","☕","🍷","🤍","🫶","💋","😴","🥹","👀","💐","🦋"];
@@ -467,6 +482,109 @@
 
   let pessoa = null, pessoaObj = null, ultimaData = null, digitandoTimeout = null;
   let arquivoSelecionado = null;
+
+  function slugNome(nome) {
+    return (nome || "usuario")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "usuario";
+  }
+
+  function normalizarPessoa(p) {
+    const nome = (p.nome || "Usuario").trim();
+    return {
+      id: p.id || slugNome(nome),
+      nome,
+      cor: p.cor || "#378ADD",
+      iniciais: p.iniciais || nome.substring(0, 2).toUpperCase(),
+      senha: p.senha || "",
+      admin: !!p.admin,
+      foto: p.foto || ""
+    };
+  }
+
+  function usuariosParaBanco() {
+    return PESSOAS.reduce((acc, p) => {
+      const pessoaNormalizada = normalizarPessoa(p);
+      acc[pessoaNormalizada.id] = pessoaNormalizada;
+      return acc;
+    }, {});
+  }
+
+  function salvarUsuarios() {
+    return set(ref(db, "usuarios"), usuariosParaBanco());
+  }
+
+  function aplicarAvatar(el, p) {
+    if (!el || !p) return;
+    el.classList.toggle("com-foto", !!p.foto);
+    if (p.foto) {
+      el.style.background = `center / cover no-repeat url("${p.foto}")`;
+      el.textContent = "";
+    } else {
+      el.style.background = p.cor;
+      el.textContent = p.iniciais;
+    }
+  }
+
+  function atualizarTelaUsuarioAtual() {
+    if (!pessoaObj) return;
+    const atualizado = PESSOAS.find(p => p.id === pessoaObj.id || p.nome === pessoaObj.nome);
+    if (!atualizado) return;
+    pessoaObj = atualizado;
+    pessoa = atualizado.nome;
+    localStorage.setItem("pessoaChat", atualizado.id);
+    aplicarAvatar(document.getElementById("header-avatar"), atualizado);
+    document.getElementById("header-nome").textContent = atualizado.nome;
+  }
+
+  function arquivoParaDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error("Nao foi possivel ler o arquivo."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function imagemReduzida(file, tamanho = 256, qualidade = 0.82) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error || new Error("Nao foi possivel ler a imagem."));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("Imagem invalida."));
+        img.onload = () => {
+          const escala = Math.min(1, tamanho / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(img.width * escala));
+          canvas.height = Math.max(1, Math.round(img.height * escala));
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", qualidade));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  onValue(ref(db, "usuarios"), snap => {
+    const dados = snap.val();
+    if (dados) {
+      PESSOAS = Object.values(dados).map(normalizarPessoa);
+    } else {
+      PESSOAS = PESSOAS_PADRAO.map(normalizarPessoa);
+      salvarUsuarios();
+    }
+    renderizarAvatares();
+    renderizarListaAdmin();
+    preencherSelectSenha();
+    const salvo = localStorage.getItem("pessoaChat");
+    if (salvo && !pessoaObj) {
+      const encontrado = PESSOAS.find(p => p.id === salvo || p.nome === salvo);
+      if (encontrado) entrar(encontrado);
+    }
+    atualizarTelaUsuarioAtual();
+  });
 
   // ── EMOJI PICKER ──
   const picker = document.getElementById("emoji-picker");
@@ -496,6 +614,32 @@
     document.getElementById("file-input").value = "";
   };
 
+  window.escolherMinhaFoto = () => {
+    if (!pessoaObj) return;
+    document.getElementById("foto-usuario-input").click();
+  };
+
+  document.getElementById("foto-usuario-input").addEventListener("change", async e => {
+    const f = e.target.files[0];
+    if (!f || !pessoaObj) return;
+    if (!f.type.startsWith("image/")) { alert("Escolha uma imagem."); return; }
+    if (f.size > 5 * 1024 * 1024) { alert("Foto muito grande. Maximo 5 MB."); return; }
+    try {
+      pessoaObj.foto = await imagemReduzida(f);
+      const idx = PESSOAS.findIndex(p => p.id === pessoaObj.id || p.nome === pessoaObj.nome);
+      if (idx >= 0) PESSOAS[idx] = { ...PESSOAS[idx], foto: pessoaObj.foto };
+      await salvarUsuarios();
+      aplicarAvatar(document.getElementById("header-avatar"), pessoaObj);
+      renderizarAvatares();
+      renderizarListaAdmin();
+      alert("Foto atualizada!");
+    } catch (err) {
+      alert("Nao consegui salvar a foto: " + (err.message || err));
+    } finally {
+      e.target.value = "";
+    }
+  });
+
   // ── MODAL IMAGEM ──
   window.fecharModal = () => document.getElementById("modal-img").classList.remove("open");
   window.abrirImagem = (url) => {
@@ -511,10 +655,11 @@
       const btn = document.createElement("button");
       btn.className = "avatar-btn";
       btn.innerHTML = `
-        <div class="circle" style="background:${p.cor}">${p.iniciais}</div>
+        <div class="circle"></div>
         <span>${p.nome}</span>
         ${p.admin ? '<span class="badge-admin">admin</span>' : ''}
       `;
+      aplicarAvatar(btn.querySelector(".circle"), p);
       btn.onclick = () => pedirSenha(p);
       avatarRow.appendChild(btn);
     });
@@ -530,8 +675,7 @@
     const ts = document.getElementById("tela-senha");
     ts.classList.add("ativo");
     const av = document.getElementById("senha-avatar");
-    av.style.background = p.cor;
-    av.textContent = p.iniciais;
+    aplicarAvatar(av, p);
     document.getElementById("senha-label").textContent = `Olá, ${p.nome}! Digite sua senha`;
     document.getElementById("campo-senha").value = "";
     document.getElementById("erro-senha").textContent = "";
@@ -580,13 +724,14 @@
       const div = document.createElement("div");
       div.className = "usuario-item";
       div.innerHTML = `
-        <div class="u-circle" style="background:${p.cor}">${p.iniciais}</div>
+        <div class="u-circle"></div>
         <div class="u-info">
           <div class="u-nome">${p.nome} ${p.admin ? '👑' : ''}</div>
           <div class="u-tipo">${p.admin ? 'Administrador' : 'Usuário'}</div>
         </div>
         ${!p.admin ? `<button class="btn-remover" onclick="removerUsuario(${i})" title="Remover">✕</button>` : ''}
       `;
+      aplicarAvatar(div.querySelector(".u-circle"), p);
       lista.appendChild(div);
     });
   }
@@ -611,23 +756,32 @@
     document.getElementById("aba-" + aba).classList.add("ativo");
   };
 
-  window.adicionarUsuario = () => {
+  window.adicionarUsuario = async () => {
     const nome = document.getElementById("novo-nome").value.trim();
     const senha = document.getElementById("nova-senha").value;
     const cor = document.getElementById("nova-cor").value;
+    const fotoArquivo = document.getElementById("nova-foto").files[0];
     const msg = document.getElementById("msg-adicionar");
     if (!nome) { msg.className = "admin-msg erro"; msg.textContent = "Digite um nome."; return; }
     if (!senha) { msg.className = "admin-msg erro"; msg.textContent = "Digite uma senha."; return; }
     if (PESSOAS.find(p => p.nome.toLowerCase() === nome.toLowerCase())) {
       msg.className = "admin-msg erro"; msg.textContent = "Já existe um usuário com esse nome."; return;
     }
+    let foto = "";
+    if (fotoArquivo) {
+      if (!fotoArquivo.type.startsWith("image/")) { msg.className = "admin-msg erro"; msg.textContent = "Escolha uma imagem."; return; }
+      if (fotoArquivo.size > 5 * 1024 * 1024) { msg.className = "admin-msg erro"; msg.textContent = "Foto muito grande. Maximo 5 MB."; return; }
+      foto = await imagemReduzida(fotoArquivo);
+    }
     const iniciais = nome.substring(0,2).toUpperCase();
-    PESSOAS.push({ nome, cor, iniciais, senha, admin: false });
+    PESSOAS.push({ id: slugNome(nome), nome, cor, iniciais, senha, admin: false, foto });
+    await salvarUsuarios();
     renderizarAvatares();
     renderizarListaAdmin();
     preencherSelectSenha();
     document.getElementById("novo-nome").value = "";
     document.getElementById("nova-senha").value = "";
+    document.getElementById("nova-foto").value = "";
     msg.className = "admin-msg ok";
     msg.textContent = `✓ ${nome} adicionado com sucesso!`;
     setTimeout(() => msg.textContent = "", 3000);
@@ -636,6 +790,7 @@
   window.removerUsuario = (i) => {
     if (!confirm(`Remover ${PESSOAS[i].nome}?`)) return;
     PESSOAS.splice(i, 1);
+    salvarUsuarios();
     renderizarAvatares();
     renderizarListaAdmin();
     preencherSelectSenha();
@@ -649,6 +804,7 @@
     const p = PESSOAS.find(x => x.nome === nomeU);
     if (p) {
       p.senha = novaSenha;
+      salvarUsuarios();
       document.getElementById("nova-senha-u").value = "";
       msg.className = "admin-msg ok";
       msg.textContent = `✓ Senha de ${nomeU} alterada!`;
@@ -669,13 +825,12 @@
   function entrar(p) {
     pessoa = p.nome;
     pessoaObj = p;
-    localStorage.setItem("pessoaChat", p.nome);
+    localStorage.setItem("pessoaChat", p.id || p.nome);
     document.getElementById("login-screen").style.display = "none";
     const cs = document.getElementById("chat-screen");
     cs.style.display = "flex";
     const av = document.getElementById("header-avatar");
-    av.style.background = p.cor;
-    av.textContent = p.iniciais;
+    aplicarAvatar(av, p);
     document.getElementById("header-nome").textContent = p.nome;
     iniciarChat();
   }
@@ -683,7 +838,7 @@
   // auto-login
   const saved = localStorage.getItem("pessoaChat");
   if (saved) {
-    const found = PESSOAS.find(p => p.nome === saved);
+    const found = PESSOAS.find(p => p.id === saved || p.nome === saved);
     if (found) entrar(found);
   }
 
@@ -798,6 +953,32 @@
     return (bytes/(1024*1024)).toFixed(1) + " MB";
   }
 
+  function nomeArquivoSeguro(nome) {
+    const partes = (nome || "arquivo").split(".");
+    const ext = partes.length > 1 ? "." + partes.pop().toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+    const base = partes.join(".")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "arquivo";
+    return base + ext;
+  }
+
+  async function enviarArquivoPeloBanco(f, msgRef) {
+    if (f.size > 3 * 1024 * 1024) {
+      throw new Error("O Storage recusou o upload e o fallback aceita arquivos de ate 3 MB.");
+    }
+    const url = await arquivoParaDataURL(f);
+    await push(msgRef, {
+      pessoa,
+      url,
+      tipo: f.type.startsWith("image/") ? "imagem" : "arquivo",
+      nomeArquivo: f.name,
+      tamanho: formatarTamanho(f.size),
+      data: serverTimestamp()
+    });
+  }
+
   window.enviar = async function () {
     if (!pessoa) return;
     const msgRef = ref(db, `salas/${sala}/mensagens`);
@@ -807,9 +988,12 @@
     if (arquivoSelecionado) {
       const f = arquivoSelecionado;
       const ehImagem = f.type.startsWith("image/");
-      const caminho = `salas/${sala}/${Date.now()}_${f.name}`;
+      const caminho = `salas/${sala}/${Date.now()}_${nomeArquivoSeguro(f.name)}`;
       const storageRef = sref(storage, caminho);
-      const task = uploadBytesResumable(storageRef, f);
+      const task = uploadBytesResumable(storageRef, f, {
+        contentType: f.type || "application/octet-stream",
+        customMetadata: { nomeOriginal: f.name, pessoa }
+      });
 
       const pb = document.getElementById("progress-bar");
       const pf = document.getElementById("progress-fill");
@@ -817,7 +1001,18 @@
 
       task.on("state_changed",
         snap => { pf.style.width = (snap.bytesTransferred/snap.totalBytes*100) + "%"; },
-        err => { alert("Erro no upload: " + err.message); pb.style.display = "none"; },
+        async err => {
+          try {
+            await enviarArquivoPeloBanco(f, msgRef);
+            cancelarAnexo();
+            alert("O Storage recusou o upload, entao salvei este anexo pequeno pelo banco.");
+          } catch (fallbackErr) {
+            alert("Erro no upload: " + (err.code || err.message) + "\n" + (fallbackErr.message || ""));
+          } finally {
+            pb.style.display = "none";
+            pf.style.width = "0%";
+          }
+        },
         async () => {
           const url = await getDownloadURL(task.snapshot.ref);
           await push(msgRef, {
