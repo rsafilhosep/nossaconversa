@@ -367,6 +367,10 @@
           <input type="color" id="nova-cor" value="#378ADD" style="width:100%;height:40px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;padding:2px;">
         </div>
         <div>
+          <div class="admin-label">Sala (conversa)</div>
+          <input class="admin-input" id="nova-sala" placeholder="Ex: principal, familia, trabalho" maxlength="30" value="principal">
+        </div>
+        <div>
           <div class="admin-label">Foto do usuario (opcional)</div>
           <input class="admin-input" id="nova-foto" type="file" accept="image/*" style="padding:.45rem .7rem;">
         </div>
@@ -465,8 +469,8 @@
   //   admin:true = acessa painel admin
   // ══════════════════════════════════════════
   const PESSOAS_PADRAO = [
-    { id: "reinaldo", nome: "Reinaldo", cor: "#D4537E", iniciais: "R", senha: "1982", admin: true, foto: "" },
-    { id: "edilaine", nome: "Edilaine", cor: "#1D9E75", iniciais: "E", senha: "1982", admin: false, foto: "" }
+    { id: "reinaldo", nome: "Reinaldo", cor: "#D4537E", iniciais: "R", senha: "1982", admin: true, foto: "", sala: "principal" },
+    { id: "edilaine", nome: "Edilaine", cor: "#1D9E75", iniciais: "E", senha: "1982", admin: false, foto: "", sala: "principal" }
   ];
   let PESSOAS = [...PESSOAS_PADRAO];
   // ══════════════════════════════════════════
@@ -477,11 +481,10 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const storage = getStorage(app);
-  const params = new URLSearchParams(window.location.search);
-  const sala = params.get("sala") || "principal";
 
   let pessoa = null, pessoaObj = null, ultimaData = null, digitandoTimeout = null;
   let arquivoSelecionado = null;
+  let sala = "principal"; // será atualizado ao entrar
 
   function slugNome(nome) {
     return (nome || "usuario")
@@ -498,7 +501,8 @@
       iniciais: p.iniciais || nome.substring(0, 2).toUpperCase(),
       senha: p.senha || "",
       admin: !!p.admin,
-      foto: p.foto || ""
+      foto: p.foto || "",
+      sala: p.sala || "principal"
     };
   }
 
@@ -727,7 +731,7 @@
         <div class="u-circle"></div>
         <div class="u-info">
           <div class="u-nome">${p.nome} ${p.admin ? '👑' : ''}</div>
-          <div class="u-tipo">${p.admin ? 'Administrador' : 'Usuário'}</div>
+          <div class="u-tipo">${p.admin ? 'Administrador' : 'Usuário'} · sala: ${p.sala || 'principal'}</div>
         </div>
         ${!p.admin ? `<button class="btn-remover" onclick="removerUsuario(${i})" title="Remover">✕</button>` : ''}
       `;
@@ -760,6 +764,7 @@
     const nome = document.getElementById("novo-nome").value.trim();
     const senha = document.getElementById("nova-senha").value;
     const cor = document.getElementById("nova-cor").value;
+    const salaNova = document.getElementById("nova-sala").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") || "principal";
     const fotoArquivo = document.getElementById("nova-foto").files[0];
     const msg = document.getElementById("msg-adicionar");
     if (!nome) { msg.className = "admin-msg erro"; msg.textContent = "Digite um nome."; return; }
@@ -774,7 +779,7 @@
       foto = await imagemReduzida(fotoArquivo);
     }
     const iniciais = nome.substring(0,2).toUpperCase();
-    PESSOAS.push({ id: slugNome(nome), nome, cor, iniciais, senha, admin: false, foto });
+    PESSOAS.push({ id: slugNome(nome), nome, cor, iniciais, senha, admin: false, foto, sala: salaNova });
     await salvarUsuarios();
     renderizarAvatares();
     renderizarListaAdmin();
@@ -782,8 +787,9 @@
     document.getElementById("novo-nome").value = "";
     document.getElementById("nova-senha").value = "";
     document.getElementById("nova-foto").value = "";
+    document.getElementById("nova-sala").value = "principal";
     msg.className = "admin-msg ok";
-    msg.textContent = `✓ ${nome} adicionado com sucesso!`;
+    msg.textContent = `✓ ${nome} adicionado (sala: ${salaNova})!`;
     setTimeout(() => msg.textContent = "", 3000);
   };
 
@@ -825,6 +831,7 @@
   function entrar(p) {
     pessoa = p.nome;
     pessoaObj = p;
+    sala = p.sala || "principal";
     localStorage.setItem("pessoaChat", p.id || p.nome);
     document.getElementById("login-screen").style.display = "none";
     const cs = document.getElementById("chat-screen");
@@ -965,8 +972,8 @@
   }
 
   async function enviarArquivoPeloBanco(f, msgRef) {
-    if (f.size > 3 * 1024 * 1024) {
-      throw new Error("O Storage recusou o upload e o fallback aceita arquivos de ate 3 MB.");
+    if (f.size > 10 * 1024 * 1024) {
+      throw new Error("Arquivo muito grande para enviar (máximo 10 MB).");
     }
     const url = await arquivoParaDataURL(f);
     await push(msgRef, {
@@ -989,44 +996,63 @@
       const f = arquivoSelecionado;
       const ehImagem = f.type.startsWith("image/");
       const caminho = `salas/${sala}/${Date.now()}_${nomeArquivoSeguro(f.name)}`;
-      const storageRef = sref(storage, caminho);
-      const task = uploadBytesResumable(storageRef, f, {
-        contentType: f.type || "application/octet-stream",
-        customMetadata: { nomeOriginal: f.name, pessoa }
-      });
-
       const pb = document.getElementById("progress-bar");
       const pf = document.getElementById("progress-fill");
-      pb.style.display = "block";
 
-      task.on("state_changed",
-        snap => { pf.style.width = (snap.bytesTransferred/snap.totalBytes*100) + "%"; },
-        async err => {
-          try {
-            await enviarArquivoPeloBanco(f, msgRef);
-            cancelarAnexo();
-            alert("O Storage recusou o upload, entao salvei este anexo pequeno pelo banco.");
-          } catch (fallbackErr) {
-            alert("Erro no upload: " + (err.code || err.message) + "\n" + (fallbackErr.message || ""));
-          } finally {
+      // Tenta Storage primeiro; se falhar vai direto pro fallback (banco)
+      let storageOk = false;
+      try {
+        const storageRef = sref(storage, caminho);
+        const task = uploadBytesResumable(storageRef, f, {
+          contentType: f.type || "application/octet-stream",
+          customMetadata: { nomeOriginal: f.name, pessoa }
+        });
+        pb.style.display = "block";
+        storageOk = true;
+
+        task.on("state_changed",
+          snap => { pf.style.width = (snap.bytesTransferred/snap.totalBytes*100) + "%"; },
+          async err => {
+            try {
+              await enviarArquivoPeloBanco(f, msgRef);
+              cancelarAnexo();
+            } catch (fallbackErr) {
+              alert("Erro no envio: " + (fallbackErr.message || err.message || err.code));
+            } finally {
+              pb.style.display = "none";
+              pf.style.width = "0%";
+            }
+          },
+          async () => {
+            const url = await getDownloadURL(task.snapshot.ref);
+            await push(msgRef, {
+              pessoa, url,
+              tipo: ehImagem ? "imagem" : "arquivo",
+              nomeArquivo: f.name,
+              tamanho: formatarTamanho(f.size),
+              data: serverTimestamp()
+            });
             pb.style.display = "none";
             pf.style.width = "0%";
+            cancelarAnexo();
           }
-        },
-        async () => {
-          const url = await getDownloadURL(task.snapshot.ref);
-          await push(msgRef, {
-            pessoa, url,
-            tipo: ehImagem ? "imagem" : "arquivo",
-            nomeArquivo: f.name,
-            tamanho: formatarTamanho(f.size),
-            data: serverTimestamp()
-          });
+        );
+      } catch (initErr) {
+        // Storage não inicializou, usar fallback
+      }
+
+      if (!storageOk) {
+        pb.style.display = "block";
+        try {
+          await enviarArquivoPeloBanco(f, msgRef);
+          cancelarAnexo();
+        } catch (err) {
+          alert("Erro no envio: " + (err.message || err));
+        } finally {
           pb.style.display = "none";
           pf.style.width = "0%";
-          cancelarAnexo();
         }
-      );
+      }
       return;
     }
 
